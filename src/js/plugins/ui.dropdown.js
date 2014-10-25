@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ui.dropdown
  * api:
         load:function(options){}//
@@ -62,6 +62,7 @@
             }
             
             this.$el=$el;
+            this.$target=this.$el.eq(0);
             this.callback=options.callback||'';
             this.outclick=options.outclick||'';
             
@@ -91,7 +92,7 @@
             toggle:function(e,el){
                 if(!e){
                     //console.dir(this.$el);
-                    return this.$el.toggleClass(_c_open);
+                    return this.$target.toggleClass(_c_open);
                 }
                 
                 var target=e.target,
@@ -118,6 +119,7 @@
                 }
                 if(target.getAttribute('data-role') === _r_button){//options
                     
+                    this.$target=$target.parent();
                     return this.toggle();
                 }
             },

@@ -27,9 +27,10 @@
 		var pagination=require('ui.pagination');
             pagination.load({
 				el:'.pagination',
-				current:1,//current page index
-				totals:21,//total page index
-				pages:5,//page counts ,default 0(no pagination),if ellipsis,only odd
+				current:3,//current page index
+				totals:53,//total page index
+				sizes:5,
+				pages:8,//page counts ,default 0(no pagination),if ellipsis,only odd
 				//ellipsis:false,//default true
 				pagination:'<li><a>{pagination}</a></li>',//pagination object
 				callback:function(index){//click callback

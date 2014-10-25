@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ui.pagination
  * api:
         load:function(options){}//
@@ -24,6 +24,7 @@
             var pagination=require('ui.pagination');
             pagination.load({
 				el:'.pagination',
+                etype:'bind',
 				current:1,//current page index
 				totals:21,//total page index
 				pages:5,//page counts ,default 0(no pagination),if ellipsis,only odd
@@ -42,6 +43,12 @@
     }
     var $name=module.globals('$');
     
+    
+    var _format={
+        'ellipsis':'...',
+        '...':'ellipsis'
+    };
+    
     module.declare('ui.pagination',[$name],function(require){
         var $=require($name);
         
@@ -54,22 +61,32 @@
             }
             this.$el=$(options.el);
             this.previous=this.current=options.current||1;
-            this.totals=options.totals||5;
-            this.pages=options.pages||0;
+			this.pages=options.pages||5;
+			this.sizes=options.sizes||0;
+            this.totals=Math.ceil((options.totals||5)/this.pages);
             this.pagination=options.pagination||'<li><a>{pagination}</a></li>';
             this.callback=options.callback;
-            
-			//ellipsis
-			var ellipsis=options.ellipsis === false ? false : true;
-			this.create=ellipsis ? this.ellipsis : this.normal;
+            this.etype=options.etype||'';
 			
+            
+            //ellipsis
+			this.ellipsis=options.ellipsis === false ? false : true;
+			//
+            this.arr=[];
+            this.arr.length=this.totals;
+            var i=0,
+                len=this.arr.length;
+            for(;i<len;i++){
+                this.arr[i]=i+1;
+            };
+            //prev
             this.$prev=this.$el.find('>li.prev')||this.$el.find('>li.first');
             
-            this.pageto(this.current);
+            //
+            this.pageto();
             
             var _this=this;
-            //bind event
-            this.$el.bind('click',function(e){
+            var _pagenation_click=function(e){
                 var $target=$(e.target),
                     $parent=$target.parent();
                   
@@ -110,10 +127,16 @@
                     
                     return _this.pageto(_this.current);
                 }
-            });
+            };
+            //bind event
+            if(this.etype === 'bind'){
+                this.$el.bind('click',_pagenation_click);
+            }else{
+                this.$el[0].onclick=_pagenation_click;
+            }
         };
         Pagination.prototype={
-            pageto:function(index){
+            pageto:function(){
                 //remove disabled
                 this.$el.find('>li').removeClass('disabled');
                 
@@ -133,136 +156,91 @@
                 
                 $pagination.removeClass('active');
                 
-                if(this.pages === 0){
+                if(this.sizes === 0){
                     
                     return $pagination.remove();
                 }
                 
-                //totals <= pages
-                if(this.totals <= this.pages){
+                this.sizes=this.sizes < 3 ? 3 : this.sizes;
+                
+                //totals < sizes
+                if(this.totals < this.sizes){
                     if(this.created){
                         
                         return $pagination.eq(this.current-1).addClass('active');
                     }
                     //
-                    return this.create(this.totals);
+                    return this.createEl(this.arr,$pagination);
                 }
                 
-                //totals > pages
-                this.create(this.pages,$pagination);
+                //totals > sizes
+                this.create($pagination);
             },
-            normal:function(len,$pagination){
-                var i=0,
-                    activeIndex=this.current,
-                    index=1,
-                    $ul=$('<ul/>'),
-                    _mIndex=Math.ceil(this.pages/2);
-                if(this.totals > this.pages){
-                    if(this.totals-this.current < _mIndex){
-						index=this.totals-this.pages+1;
-                        activeIndex=this.pages-(this.totals-this.current);
-                    }else if(this.current > _mIndex){
-						index=this.current-_mIndex+1;
-                        activeIndex=_mIndex;
-                    }
-                }                
+            create:function($pagination){
+				var arr=[].concat(this.arr),
+					offset=Math.floor(this.sizes/2),
+					start=this.current-offset,
+					end=!start ? this.sizes : this.current+offset;
+                
+                if(this.ellipsis){
+					var m=start - 2,//left splice length
+						n=this.totals-(end+1);//right splice length
+					arr[0]=1;//arr first value
+					arr[arr.length-1]=this.totals;//arr last value
+                    
+                    if(m > 0){
+                        if(this.totals - m < this.sizes){
+                            m=this.current - offset - 2;
+                        }
+						arr.splice(1,m,'ellipsis');
+                        end=end-m+1;
+					}
+					if(n > 0){
+						arr.splice(end,n,'ellipsis');
+					}
+				}else{
+					var m=start - 1,//left splice length
+						n=this.totals - end;//right splice length
+					arr[0]=1;//arr first value
+					if(m > 0){
+                        if(this.totals - m < this.sizes){
+                            m=this.current - offset - 2;
+                        }
+						arr.splice(0,m);
+                        end=end-m;
+					}
+					if(n > 0){
+						arr.splice(end,n);
+					}
+				}
+                
+                this.createEl(arr,$pagination);
+            },
+            createEl:function(arr,$pagination){
+                var $ul=$('<ul/>'),
+                    i=0,
+                    len=arr.length;
                 $pagination=$pagination||this.$el.find('>li:not(.first,.prev,.next,.last)');
-                
-                index=index <=0 ? 1 : index;
-                //console.log('current:'+this.current,'index:'+index,'activeIndex:'+activeIndex);
-				
-				if(this.previous !== index){
-                    this.created=false;
-                }
-				
-				if(this.created){
-                    
-                    return $pagination.eq(activeIndex-1).addClass('active');
-                }
-                
+                //empty to remove
                 $pagination.remove();
-				//previous
-				this.previous=index;
+                //to create by array
                 for(;i<len;i++){
-                    var $li=$(this.pagination.replace(/{pagination}/g,index++)).attr('data-role','pagination');
+                    var val=arr[i]||'';
+                    val=_format[val]||val;
+                    var $li=$(this.pagination.replace(/{pagination}/g,val))
+                        .attr('data-role','pagination')
+                        .addClass(_format[val]||'')//ellipsis
+                        .attr('data-index',val);
                     $ul.append($li);
                 }
                 var $children=$ul.children();
                 //atter to
                 this.$prev.after($children);
                 //active
-                $children.eq(activeIndex-1).addClass('active');
+                this.$el.find('[data-index="'+this.current+'"]').addClass('active');
                 
                 this.created=true;
-            },
-			ellipsis:function(len,$pagination){
-                if(this.totals > this.pages){
-                    len=len-4;
-                }else{
-					
-					return this.normal(this.totals);
-				}
-			    len=len<3 ? 3 : len;//
-				len=len % 2 === 0 ? len+1 : len;//only odd
-                var i=0,
-                    activeIndex=this.current,
-					_mIndex=Math.floor(len/2)
-                    index=1,
-                    $ul=$('<ul/>');
-				$pagination=$pagination||this.$el.find('>li:not(.first,.prev,.next,.last)');
-                var $ellipsis=$(this.pagination.replace(/{pagination}/g,'...')).attr('data-role','pagination').addClass('ellipsis');
-				
-				if(this.current-_mIndex > 2){
-					index=this.current-_mIndex;
-					activeIndex=_mIndex+3;
-				}
-				if(this.current-_mIndex >= this.totals-len+1){
-					index=this.totals-len+1;
-				}
-				if(this.current+_mIndex > this.totals-2){
-					activeIndex=3+this.current-index;//2+this.current-index+1
-				}
-				if(this.previous !== index){
-                    this.created=false;
-                }
-				if(this.created){
-                    
-                    return $pagination.eq(activeIndex-1).addClass('active');
-                }
-				
-				$pagination.remove();
-				
-				if(this.current-_mIndex > 2){
-					//first
-					$ul.append($(this.pagination.replace(/{pagination}/g,1)).attr('data-role','pagination'));
-					//ellipsis
-					$ul.append($ellipsis);
-				}
-				index=index <=0 ? 1 : index;
-				//previous
-				this.previous=index;
-				//console.log('current:'+this.current,'index:'+index,'activeIndex:'+activeIndex);
-                for(;i<len;i++){
-                    var $li=$(this.pagination.replace(/{pagination}/g,index++)).attr('data-role','pagination');
-                    $ul.append($li);
-                }
-				if(this.current+_mIndex <= this.totals-2){
-					//ellipsis
-					$ul.append($ellipsis.clone());
-				}
-				if(this.current+_mIndex <= this.totals-1){
-					//last
-					$ul.append($(this.pagination.replace(/{pagination}/g,this.totals)).attr('data-role','pagination'));
-				}
-				
-                var $children=$ul.children();
-                //atter to
-                this.$prev.after($children);
-                //active
-                $children.eq(activeIndex-1).addClass('active');
-                
-                this.created=true;
-			}
+            }
         };
         
         return {
