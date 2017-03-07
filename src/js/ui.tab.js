@@ -57,13 +57,13 @@
                 var $this=$(this),
                     target=e.target,
                     $li=$this.find('[data-role="tab"]');
-                if(target.getAttribute('data-ignore') !== null){
-                    
-                    return;
-                }
                 while(!(target === this  || target.getAttribute('data-role') === 'tab')){
                     
                     target=target && target.parentNode ? target.parentNode : this;
+                }
+                if(target.getAttribute('data-ignore') !== null){
+                    
+                    return;
                 }
                 if(target.getAttribute('data-role') !== 'tab'){
                     
