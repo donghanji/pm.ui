@@ -132,7 +132,7 @@
                 if(index === undefined){
 
                     this.$nav.find('[data-role="tab"]').removeAttr('data-ignore');
-                    
+
                     return this;
                 }
                 var $target=this.target(index);
@@ -155,7 +155,8 @@
                 
                 var selector=$target.attr('data-pane')||'',
                     $selector=$(selector),
-                    $pane=this.$content.find('[data-role="pane"].active')||$selector.parent().find('> .active');
+                    //$pane=this.$content.find('[data-role="pane"].active')||$selector.parent().find('> .active');
+                    $pane=$selector.siblings('[data-role="pane"].active')||$selector.parent().find('> .active');
                 $pane.removeClass('active');
                 $selector.addClass('active');
 
