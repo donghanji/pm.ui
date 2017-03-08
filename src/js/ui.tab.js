@@ -82,7 +82,7 @@
             });
         };
         Tab.prototype={
-            show:function(index){
+            target:function(index){
                 index=index||0;
                 
                 var $li=this.$nav.find('[data-role="tab"]');
@@ -90,13 +90,60 @@
                     
                     return;
                 }
-                
-                var $target=$li.eq(index);
-                if($target.haClass('active')){
+
+                return $li.eq(index);
+            },
+            show:function(index){
+                //
+                var $target=this.target(index);
+                //
+                if(!$target){
+
+                    return this;
+                }
+                if($target.hasClass('active')){
                     
                     return;
                 }
+                var $li=this.$nav.find('[data-role="tab"]');
+                //
                 this.activate($target,$li);
+
+                return this;
+            },
+            disable:function(index){
+                if(index === undefined){
+
+                    this.$nav.find('[data-role="tab"]').attr('data-ignore',true);
+
+                    return this;
+                }
+                var $target=this.target(index);
+                if(!$target){
+
+                    return this;
+                }
+                //
+                $target.attr('data-ignore',true);
+
+                return this;
+            },
+            enable:function(index){
+                if(index === undefined){
+
+                    this.$nav.find('[data-role="tab"]').removeAttr('data-ignore');
+                    
+                    return this;
+                }
+                var $target=this.target(index);
+                if(!$target){
+
+                    return this;
+                }
+                //
+                $target.removeAttr('data-ignore');
+
+                return this;
             },
             activate:function($target,$li){
                 $li=$li||$target.parent().find('> [data-role="tab"]');
@@ -111,6 +158,8 @@
                     $pane=this.$content.find('[data-role="pane"].active')||$selector.parent().find('> .active');
                 $pane.removeClass('active');
                 $selector.addClass('active');
+
+                return this;
             }
         };
         
